@@ -29,13 +29,12 @@ export class UserService {
     this.logger.log(`In ${this.register.name} function`);
 
     const hashedPassword = await this.hashPassword(data.password);
-    const createdUserData = await this.userRepository.createUser({
+    await this.userRepository.createUser({
       ...data,
       password: hashedPassword,
     });
 
     return {
-      email: createdUserData,
       message: `User registered successfully`,
     };
   }
