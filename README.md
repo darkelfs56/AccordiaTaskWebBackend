@@ -40,12 +40,25 @@ This web app project is about an AI Resume Chatbot, where user can chat with the
 
 ### How to run crawl4ai Docker
 Make sure to install docker, with its command line interface.
-Then, just run this command:
+Then, just run this command in your cli or terminal:
+
+- For Windows
+```bash
 docker run -d `
   -p 11235:11235 `
   --name crawl4ai `
   --shm-size=1g `
   unclecode/crawl4ai:latest
+```
+
+- For Linux, MacOS
+```bash
+docker run -d \
+  -p 11235:11235 \
+  --name crawl4ai \
+  --shm-size=1g \
+  unclecode/crawl4ai:latest
+```
 
 
 ## Project setup
