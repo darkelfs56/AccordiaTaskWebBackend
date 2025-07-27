@@ -14,3 +14,9 @@ export class SendMessageRequest {
   @IsNotEmpty()
   timestamp: Date;
 }
+
+export class ICrawlRequestBody {
+  @IsString({ each: true })
+  @IsNotEmpty()
+  urlLinks: string[];
+}

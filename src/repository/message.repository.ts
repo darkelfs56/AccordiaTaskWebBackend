@@ -38,13 +38,13 @@ export class MessageRepository {
     }
   }
 
-  async getMessageHistory(data: { userId: string }) {
+  async getMessageHistory(data: { userId: string; limit?: number }) {
     try {
       const messageHistory = this.messageModel
         .find({
           userId: data.userId,
         })
-        .limit(5)
+        .limit(data?.limit ?? 5)
         .sort({ timestamp: 'descending' })
         .exec();
 
