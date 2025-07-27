@@ -38,27 +38,33 @@ This web app project is about an AI Resume Chatbot, where user can chat with the
 - [Web crawl and scraper: Crawl4ai](https://github.com/unclecode/crawl4ai)
 
 
-### How to run crawl4ai Docker
-Make sure to install docker, with its command line interface.
-Then, just run this command in your cli or terminal:
+### How to run crawl4ai Docker container
+1. Make sure to install docker, with its command line interface.
+2. Get the docker image for crawl4ai:
+   - Docker pull the latest image with this command in your cli or terminal:
+     ```bash
+     docker pull unclecode/crawl4ai:latest
+     ```
+   - OR build the docker image yourself, full guide on crawl4ai [docs here](https://docs.crawl4ai.com/core/docker-deployment)
+   <br></br>
+3. Finally, just run this command in your cli or terminal:
+    - For Windows
+    ```bash
+    docker run -d `
+      -p 11235:11235 `
+      --name crawl4ai `
+      --shm-size=1g `
+      unclecode/crawl4ai:latest
+    ```
 
-- For Windows
-```bash
-docker run -d `
-  -p 11235:11235 `
-  --name crawl4ai `
-  --shm-size=1g `
-  unclecode/crawl4ai:latest
-```
-
-- For Linux, MacOS
-```bash
-docker run -d \
-  -p 11235:11235 \
-  --name crawl4ai \
-  --shm-size=1g \
-  unclecode/crawl4ai:latest
-```
+    - For Linux, MacOS
+    ```bash
+    docker run -d \
+      -p 11235:11235 \
+      --name crawl4ai \
+      --shm-size=1g \
+      unclecode/crawl4ai:latest
+    ```
 
 
 ## Project setup
