@@ -15,11 +15,9 @@ import { AIToolService } from './ai-tool.service';
 const DEFAULT_CONTEXT = `
 You are an AI Resume Chatbot. When a user provides their resume, analyze its strengths and weaknesses.
 If the user provides a job link, use the webCrawlAndScrape function to extract key job details like the title, company, location, description, salary, benefits, responsibilities, and qualifications. Then compare these requirements to the user's resume and give a score out of 100 based on relevant skills, projects, and qualifications. Answer any follow-up questions they ask. Return the result in clean markdown format with clear headers and bullet points.
-Assume every job link is new in the most recent user message and you need to make use of the webCrawlAndScrape function.
-You would also be given past messages history to understand incoming user message and context, if exists.
-Do not use the webCrawlAndScrape function for the past messages!
+You would also be given past messages history to understand incoming user message and context if exists, do not use webCrawlAndScrape function for those messages.
+Always prioritize and reply to the most recent user message and don't evaluate their resume unless their most recent message has given a job link.
 Be honest, helpful, and practical.
-Always prioritize and reply to the most recent user message and do not elaborate on anything unless the user mentions it.
 `;
 
 const GREET_MESSAGE = `
@@ -93,7 +91,7 @@ export class AIChatbotService {
     const pastMessageHistory =
       (await this.messageRepository.getMessageHistory({
         userId: data.userId,
-        limit: 2,
+        limit: 5,
       })) ?? [];
 
     const userMsg: IMessage = data;
@@ -107,7 +105,9 @@ export class AIChatbotService {
       ...pastMessageHistory.map((message) => {
         return {
           role: message.role,
-          content: message.content,
+          content:
+            `timestamp is: ${message.timestamp as unknown as string} and message is:\n` +
+            message.content,
         };
       }),
       {
@@ -117,20 +117,17 @@ export class AIChatbotService {
     ];
 
     try {
-      const hasLink = /(https?:\/\/[^\s]+)/.test(userMsg.content);
-      const toolsToUse = hasLink ? this.tools : null;
-
       const response = await this.aiChatbotClient.chat.completions.create({
         model: this.aiChatbotModel,
         messages: messages,
         stream: false,
-        tools: toolsToUse,
+        tools: this.tools,
       });
 
       const responseMessage = response.choices[0].message;
       const toolCalls = responseMessage?.tool_calls;
 
-      if (toolsToUse && toolCalls && toolCalls.length !== 0) {
+      if (toolCalls && toolCalls.length !== 0) {
         const processedText = await this.handleToolCalls({
           responseMessage,
           toolCalls,

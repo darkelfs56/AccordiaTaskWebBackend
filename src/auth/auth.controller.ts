@@ -51,13 +51,19 @@ export class AuthController {
   async logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('access_token', {
       httpOnly: true,
-      secure: true,
       signed: true,
+      secure: this.configService.get('NODE_ENV') === 'production',
+      sameSite:
+        this.configService.get('NODE_ENV') === 'production' ? 'none' : 'strict',
+      maxAge: accessTokenMaxAge,
     });
     res.clearCookie('refresh_token', {
       httpOnly: true,
-      secure: true,
       signed: true,
+      secure: this.configService.get('NODE_ENV') === 'production',
+      sameSite:
+        this.configService.get('NODE_ENV') === 'production' ? 'none' : 'strict',
+      maxAge: refreshTokenMaxAge,
     });
     return { message: 'Logged out successfully' };
   }
