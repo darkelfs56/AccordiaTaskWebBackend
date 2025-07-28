@@ -59,6 +59,7 @@ export class Crawl4AIService implements IWebCrawlScraper {
         cache_mode: CRAWLER_CACHE_MODE.ENABLED,
         scan_full_page: true,
         only_text: true,
+        keep_data_attributes: true,
         exclude_all_images: true,
         exclude_external_links: true,
         exclude_social_media_links: true,

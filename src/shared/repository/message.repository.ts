@@ -7,7 +7,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { IMessage } from 'src/aichatbot/interfaces/message.interface';
-import { Message as MessageModel } from 'src/schemas/message.schema';
+import { Message as MessageModel } from 'src/shared/schemas/message.schema';
 // import { User } from 'src/schemas/user.schema';
 import { UserRepository } from 'src/user/user.repository';
 
