@@ -79,6 +79,7 @@ export interface CrawlerConfig {
     cache_mode: CRAWLER_CACHE_MODE;
     scan_full_page?: boolean;
     only_text?: boolean;
+    keep_data_attributes?: boolean;
     exclude_all_images?: boolean;
     exclude_external_images?: boolean;
     exclude_external_links?: boolean;

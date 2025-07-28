@@ -8,16 +8,22 @@ import { ConfigService } from '@nestjs/config';
 import Groq from 'groq-sdk';
 import { IMessage } from './interfaces/message.interface';
 import { SendMessageRequest } from './dto/send-message.dto';
-import { MessageRepository } from 'src/repository/message.repository';
+import { MessageRepository } from 'src/shared/repository/message.repository';
 import { AI_MODELS, DI_TOKENS, MessageAuthorRole } from 'src/constants';
 import { AIToolService } from './ai-tool.service';
 
 const DEFAULT_CONTEXT = `
 You are an AI Resume Chatbot. When a user provides their resume, analyze its strengths and weaknesses.
-If the user provides a job link, extract the job requirements from the page and evaluate how well the resume matches the job, anwser their follow-up questions if there are any and also make use of the webCrawlAndScrape function with the job link given by user to get job-relevant sections such as: job title, company, location, job description, job salary, benefits, responsibilities, and qualifications. Return in clean markdown with headers and bullet lists.
+If the user provides a job link, use the webCrawlAndScrape function to extract key job details like the title, company, location, description, salary, benefits, responsibilities, and qualifications. Then compare these requirements to the user's resume and give a score out of 100 based on relevant skills, projects, and qualifications. Answer any follow-up questions they ask. Return the result in clean markdown format with clear headers and bullet points.
 Assume every job link is new in the most recent user message and you need to make use of the webCrawlAndScrape function.
-You will also be given past messages history to understand incoming user message and context.
-Be honest, helpful, and practical. 
+You would also be given past messages history to understand incoming user message and context, if exists.
+Do not use the webCrawlAndScrape function for the past messages!
+Be honest, helpful, and practical.
+Always prioritize and reply to the most recent user message and do not elaborate on anything unless the user mentions it.
+`;
+
+const GREET_MESSAGE = `
+Give this greeting: "Hello! I'm your AI Resume Chatbot. I'm here to help you analyze your resume, prepare for job interviews, and provide guidance on how to improve your resume and increase your chances of getting hired. I can also get important job information if you give me any job links. Finally, please do provide your resume (if you want) in PDF format with the plus (+) icon down below!"
 `;
 
 @Injectable()
@@ -56,14 +62,16 @@ export class AIChatbotService {
       const response = await this.aiChatbotClient.chat.completions.create({
         messages: [
           {
-            role: 'assistant',
-            content: DEFAULT_CONTEXT,
+            role: MessageAuthorRole.SYSTEM,
+            content: DEFAULT_CONTEXT + '\n' + GREET_MESSAGE,
           },
         ],
         model: this.aiChatbotModel,
       });
 
-      return response.choices[0].message;
+      return {
+        message: response.choices[0].message.content,
+      };
     } catch (err: any) {
       const errMsg =
         err instanceof Error
@@ -82,6 +90,11 @@ export class AIChatbotService {
   async sendMessage(data: SendMessageRequest & { userId: string }) {
     const { content } = data;
     if (!content.trim()) return;
+    const pastMessageHistory =
+      (await this.messageRepository.getMessageHistory({
+        userId: data.userId,
+        limit: 2,
+      })) ?? [];
 
     const userMsg: IMessage = data;
     await this.messageRepository.saveMessageHistory(userMsg);
@@ -91,15 +104,22 @@ export class AIChatbotService {
         role: MessageAuthorRole.SYSTEM,
         content: DEFAULT_CONTEXT,
       },
+      ...pastMessageHistory.map((message) => {
+        return {
+          role: message.role,
+          content: message.content,
+        };
+      }),
       {
         role: userMsg.role,
         content: userMsg.content,
       },
     ];
 
-    const hasLink = /(https?:\/\/[^\s]+)/.test(userMsg.content);
-    const toolsToUse = hasLink ? this.tools : undefined;
     try {
+      const hasLink = /(https?:\/\/[^\s]+)/.test(userMsg.content);
+      const toolsToUse = hasLink ? this.tools : null;
+
       const response = await this.aiChatbotClient.chat.completions.create({
         model: this.aiChatbotModel,
         messages: messages,
@@ -110,7 +130,7 @@ export class AIChatbotService {
       const responseMessage = response.choices[0].message;
       const toolCalls = responseMessage?.tool_calls;
 
-      if (toolCalls && toolCalls.length !== 0) {
+      if (toolsToUse && toolCalls && toolCalls.length !== 0) {
         const processedText = await this.handleToolCalls({
           responseMessage,
           toolCalls,

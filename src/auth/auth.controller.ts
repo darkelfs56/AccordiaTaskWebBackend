@@ -1,10 +1,13 @@
 import { Controller, Get, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Request, Response } from 'express';
-import { LocalAuthGuard } from '../guards/local-auth.guard';
-import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
+import { LocalAuthGuard } from '../shared/guards/local-auth.guard';
+import { JwtAuthGuard } from 'src/shared/guards/jwt-auth.guard';
 import { UserFromReq } from 'src/user/dto/user.dto';
 import { ConfigService } from '@nestjs/config';
+
+const accessTokenMaxAge = 15 * 60 * 1000; //15m
+const refreshTokenMaxAge = 7 * 24 * 60 * 60 * 1000; //7d
 
 @Controller('auth')
 export class AuthController {
@@ -24,16 +27,18 @@ export class AuthController {
       httpOnly: true,
       signed: true,
       secure: this.configService.get('NODE_ENV') === 'production',
-      sameSite: 'strict',
-      maxAge: 15 * 60 * 1000, //15m
+      sameSite:
+        this.configService.get('NODE_ENV') === 'production' ? 'none' : 'strict',
+      maxAge: accessTokenMaxAge,
     });
 
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       signed: true,
       secure: this.configService.get('NODE_ENV') === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, //7d
+      sameSite:
+        this.configService.get('NODE_ENV') === 'production' ? 'none' : 'strict',
+      maxAge: refreshTokenMaxAge,
     });
 
     return {
@@ -70,8 +75,9 @@ export class AuthController {
       httpOnly: true,
       signed: true,
       secure: this.configService.get('NODE_ENV') === 'production',
-      sameSite: 'strict',
-      maxAge: 15 * 60 * 1000, //15m
+      sameSite:
+        this.configService.get('NODE_ENV') === 'production' ? 'none' : 'strict',
+      maxAge: accessTokenMaxAge,
     });
 
     return { message: 'Token successfully refreshed' };
